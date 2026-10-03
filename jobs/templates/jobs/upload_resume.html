@@ -1,0 +1,30 @@
+{% extends 'jobs/base_jobs.html' %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-7">
+        <div class="card border-0 shadow-sm rounded-4 p-5 bg-white">
+            <h3 class="fw-bold mb-3"><i class="bi bi-file-earmark-pdf text-danger me-2"></i>Upload Your Resume</h3>
+            <p class="text-muted small mb-4">Upload a PDF copy of your resume. Our parsing utility will automatically extract your text and match your skills against open roles.</p>
+            
+            <form method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="mb-4">
+                    <input type="file" name="resume_file" class="form-control" accept=".pdf" required>
+                </div>
+                <button type="submit" class="btn btn-dark w-100 rounded-pill py-2 fw-semibold">Upload & Parse PDF</button>
+            </form>
+
+            {% if profile and profile.resume_file %}
+                <div class="alert alert-success mt-4 small mb-3 rounded-3">
+                    <i class="bi bi-check-circle-fill me-1"></i> Active Resume: <strong>{{ profile.resume_file.name }}</strong>
+                </div>
+                
+                <h5 class="fw-bold mt-4">AI Extracted Text Preview:</h5>
+                <div class="bg-light p-3 rounded-3 border text-secondary small" style="max-height: 200px; overflow-y: auto; white-space: pre-line;">
+                    {{ profile.extracted_text }}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

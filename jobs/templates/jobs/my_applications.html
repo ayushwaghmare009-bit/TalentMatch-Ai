@@ -1,0 +1,29 @@
+{% extends 'jobs/base_jobs.html' %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <h2 class="fw-bold mb-4">My Applications & AI Match Scores</h2>
+        
+        {% for app in applications %}
+        <div class="card border-0 shadow-sm rounded-4 p-4 mb-3 bg-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h4 class="fw-bold mb-1">{{ app.job.title }}</h4>
+                    <p class="text-muted mb-0"><i class="bi bi-building me-1"></i> {{ app.job.company }} &bull; Applied on {{ app.applied_at|date:"M d, Y" }}</p>
+                </div>
+                <div class="text-end">
+                    <span class="badge bg-warning text-dark fs-6 px-3 py-2 rounded-pill shadow-sm">
+                        <i class="bi bi-cpu me-1"></i> Match: {{ app.match_score }}%
+                    </span>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-journal-x fs-1"></i>
+            <h5>You haven't applied to any jobs yet. Browse jobs and apply to see your AI semantic match score!</h5>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,34 @@
+{% extends 'jobs/base_jobs.html' %}
+{% block content %}
+<div class="row justify-content-center mb-5">
+    <div class="col-lg-8 text-center">
+        <h1 class="fw-bold mb-3">AI-Powered Job Board & Resume Matching</h1>
+        <form method="GET" action="{% url 'job_list' %}" class="input-group shadow-sm">
+            <input type="text" name="q" class="form-control form-control-lg border-0 px-4" placeholder="Search job title or company..." value="{{ query }}">
+            <button class="btn btn-warning px-4 fw-semibold text-dark" type="submit"><i class="bi bi-search"></i> Search</button>
+        </form>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        {% for job in jobs %}
+        <div class="card border-0 shadow-sm rounded-4 p-4 mb-3 bg-white">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h4 class="fw-bold text-dark mb-1">{{ job.title }}</h4>
+                    <p class="text-muted mb-2"><i class="bi bi-building me-1"></i> {{ job.company }} &bull; <i class="bi bi-geo-alt me-1"></i> {{ job.location }}</p>
+                </div>
+                <a href="{% url 'job_detail' job.id %}" class="btn btn-dark rounded-pill px-4 btn-sm">View Details</a>
+            </div>
+            <p class="text-secondary small mb-0 text-truncate">{{ job.description }}</p>
+        </div>
+        {% empty %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-inbox fs-1"></i>
+            <h5>No job listings found.</h5>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
