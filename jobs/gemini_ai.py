@@ -11,17 +11,17 @@ def analyze_resume_with_gemini(resume_text, job_description):
         return "Gemini API key is not configured."
 
     client = genai.Client(api_key=api_key)
-    
+
     prompt = f"""
     You are an expert technical recruiter and AI hiring assistant. 
     Analyze the following candidate resume text against the target job description.
-    
+
     JOB DESCRIPTION:
     {job_description}
-    
+
     CANDIDATE RESUME:
     {resume_text}
-    
+
     Provide a concise evaluation structured as follows:
     1. **Suitability Score (0-100%):** Give an estimated fit percentage.
     2. **Key Strengths:** Bullet points of matching skills/experience.
