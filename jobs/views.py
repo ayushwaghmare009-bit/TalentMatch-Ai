@@ -45,25 +45,35 @@ def upload_resume(request):
             profile = form.save(commit=False)
             profile.user = request.user
             
-            # Extract text safely
-            if profile.resume_file:
+            if 'resume_file' in request.FILES:
+                profile.resume_file = request.FILES['resume_file']
+                profile.save() # Save first so the file gets written to storage
+                
                 try:
                     file_path = profile.resume_file.path
                     profile.extracted_text = extract_text_from_pdf(file_path)
                 except Exception as e:
-                    profile.extracted_text = f"Could not extract text automatically. Error: {str(e)}"
-            
-            profile.save()
+                    profile.extracted_text = f"Error reading PDF file: {str(e)}"
+                
+                profile.save()
+
+            # Run Gemini analysis if we have extracted text
+            if profile.extracted_text and not profile.extracted_text.startswith("Error"):
+                sample_job_desc = "Looking for a Python Django developer with experience in scikit-learn, databases, and web deployment."
+                try:
+                    ai_feedback = analyze_resume_with_gemini(profile.extracted_text, sample_job_desc)
+                except Exception as e:
+                    ai_feedback = f"AI Evaluation unavailable: {str(e)}"
+                
+            return redirect('upload_resume')
     else:
         form = ResumeUploadForm(instance=profile)
-
-    # Generate Gemini feedback if extracted text exists in the database
-    if profile.extracted_text and not profile.extracted_text.startswith("Could not extract"):
-        sample_job_desc = "Looking for a Python Django developer with experience in scikit-learn, databases, and web deployment."
-        try:
-            ai_feedback = analyze_resume_with_gemini(profile.extracted_text, sample_job_desc)
-        except Exception as e:
-            ai_feedback = f"AI Evaluation unavailable: {str(e)}"
+        if profile.extracted_text:
+            sample_job_desc = "Looking for a Python Django developer with experience in scikit-learn, databases, and web deployment."
+            try:
+                ai_feedback = analyze_resume_with_gemini(profile.extracted_text, sample_job_desc)
+            except Exception:
+                pass
 
     return render(request, 'jobs/upload_resume.html', {
         'form': form, 

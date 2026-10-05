@@ -8,8 +8,10 @@
             
             <form method="POST" enctype="multipart/form-data">
                 {% csrf_token %}
+                {{ form.non_field_errors }}
                 <div class="mb-4">
                     <input type="file" name="resume_file" class="form-control" accept=".pdf" required>
+                    {{ form.resume_file.errors }}
                 </div>
                 <button type="submit" class="btn btn-dark w-100 rounded-pill py-2 fw-semibold">Upload & Parse PDF</button>
             </form>
