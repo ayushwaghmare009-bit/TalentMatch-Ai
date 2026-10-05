@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from .models import Job, CandidateProfile, JobApplication
 from .utility import extract_text_from_pdf, calculate_match_score
 from .forms import ResumeUploadForm
-
+from .gemini_ai import analyze_resume_with_gemini
 
 def job_list(request):
     query = request.GET.get('q', '')
@@ -35,21 +35,30 @@ def job_create(request):
     return render(request, 'jobs/job_form.html')
 
 @login_required
+@login_required
 def upload_resume(request):
     profile, created = CandidateProfile.objects.get_or_create(user=request.user)
+    ai_feedback = None
+    
     if request.method == 'POST':
         form = ResumeUploadForm(request.POST, request.FILES, instance=profile)
         if form.is_valid():
             profile = form.save(commit=False)
             profile.user = request.user
             if profile.resume_file:
-                # Extract text using pdfplumber utility
                 profile.extracted_text = extract_text_from_pdf(profile.resume_file.path)
             profile.save()
-            return redirect('upload_resume')
+            
+            # Run Gemini analysis if extracted text exists
+            if profile.extracted_text:
+                # Provide a sample or active job description for evaluation context
+                sample_job_desc = "Looking for a Python Django developer with experience in scikit-learn, databases, and web deployment."
+                ai_feedback = analyze_resume_with_gemini(profile.extracted_text, sample_job_desc)
+            
+            return render(request, 'jobs/upload_resume.html', {'form': form, 'profile': profile, 'ai_feedback': ai_feedback})
     else:
         form = ResumeUploadForm(instance=profile)
-
+        
     return render(request, 'jobs/upload_resume.html', {'form': form, 'profile': profile})
 @login_required
 def apply_to_job(request, pk):

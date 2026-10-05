@@ -25,6 +25,13 @@
                         {{ profile.extracted_text }}
                     </div>
                 {% endif %}
+
+                {% if ai_feedback %}
+                    <h5 class="fw-bold mt-4 text-primary"><i class="bi bi-stars me-2"></i>Gemini AI Resume Evaluation:</h5>
+                    <div class="bg-light p-3 rounded-3 border text-dark small" style="max-height: 300px; overflow-y: auto; white-space: pre-line;">
+                        {{ ai_feedback }}
+                    </div>
+                {% endif %}
             {% endif %}
         </div>
     </div>
