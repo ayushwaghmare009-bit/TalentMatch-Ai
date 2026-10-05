@@ -45,31 +45,31 @@ def upload_resume(request):
             profile = form.save(commit=False)
             profile.user = request.user
             
-            # 1. Extract text from the uploaded PDF file
+            # Extract text safely
             if profile.resume_file:
                 try:
-                    profile.extracted_text = extract_text_from_pdf(profile.resume_file.path)
-                except Exception:
-                    # Fallback if file path isn't direct
-                    pass
+                    file_path = profile.resume_file.path
+                    profile.extracted_text = extract_text_from_pdf(file_path)
+                except Exception as e:
+                    profile.extracted_text = f"Could not extract text automatically. Error: {str(e)}"
             
             profile.save()
-            
-            # 2. Run Gemini analysis using the extracted text
-            if profile.extracted_text:
-                sample_job_desc = "Looking for a Python Django developer with experience in scikit-learn, databases, and web deployment."
-                ai_feedback = analyze_resume_with_gemini(profile.extracted_text, sample_job_desc)
-                
-            return render(request, 'jobs/upload_resume.html', {'form': form, 'profile': profile, 'ai_feedback': ai_feedback})
     else:
         form = ResumeUploadForm(instance=profile)
-        # If text already exists in database, load feedback too
-        if profile.extracted_text:
-            sample_job_desc = "Looking for a Python Django developer with experience in scikit-learn, databases, and web deployment."
-            ai_feedback = analyze_resume_with_gemini(profile.extracted_text, sample_job_desc)
-            
-    return render(request, 'jobs/upload_resume.html', {'form': form, 'profile': profile, 'ai_feedback': ai_feedback})
 
+    # Generate Gemini feedback if extracted text exists in the database
+    if profile.extracted_text and not profile.extracted_text.startswith("Could not extract"):
+        sample_job_desc = "Looking for a Python Django developer with experience in scikit-learn, databases, and web deployment."
+        try:
+            ai_feedback = analyze_resume_with_gemini(profile.extracted_text, sample_job_desc)
+        except Exception as e:
+            ai_feedback = f"AI Evaluation unavailable: {str(e)}"
+
+    return render(request, 'jobs/upload_resume.html', {
+        'form': form, 
+        'profile': profile, 
+        'ai_feedback': ai_feedback
+    })
 @login_required
 def apply_to_job(request, pk):
     job = get_object_or_404(Job, pk=pk)
