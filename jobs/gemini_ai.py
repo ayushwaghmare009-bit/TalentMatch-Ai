@@ -1,10 +1,11 @@
 import os
+import time
 from google import genai
 
 def analyze_resume_with_gemini(resume_text, job_description):
     """
     Sends the extracted resume text and job description to Gemini 
-    to get smart AI feedback and a qualitative matching review.
+    using the stable gemini-3.5-flash model endpoint.
     """
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
@@ -28,11 +29,22 @@ def analyze_resume_with_gemini(resume_text, job_description):
     3. **Gaps / Recommendations:** Missing skills or areas to improve.
     """
 
-    try:
-        response = client.models.generate_content(
-            model='gemini-3.8-flash',
-            contents=prompt,
-        )
-        return response.text
-    except Exception as e:
-        return f"Error communicating with Gemini AI: {str(e)}"
+    max_retries = 3
+    delay = 2
+
+    for attempt in range(max_retries):
+        try:
+            response = client.models.generate_content(
+                model='gemini-3.5-flash',
+                contents=prompt,
+            )
+            return response.text
+        except Exception as e:
+            if "503" in str(e) or "UNAVAILABLE" in str(e):
+                if attempt < max_retries - 1:
+                    time.sleep(delay)
+                    delay *= 2
+                    continue
+            return f"Error communicating with Gemini AI: {str(e)}"
+            
+    return "Gemini AI service is temporarily unavailable due to high demand. Please try again in a moment."
