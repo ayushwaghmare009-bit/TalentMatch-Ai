@@ -35,7 +35,6 @@ def job_create(request):
     return render(request, 'jobs/job_form.html')
 
 @login_required
-@login_required
 def upload_resume(request):
     profile, created = CandidateProfile.objects.get_or_create(user=request.user)
     ai_feedback = None
@@ -45,21 +44,32 @@ def upload_resume(request):
         if form.is_valid():
             profile = form.save(commit=False)
             profile.user = request.user
+            
+            # 1. Extract text from the uploaded PDF file
             if profile.resume_file:
-                profile.extracted_text = extract_text_from_pdf(profile.resume_file.path)
+                try:
+                    profile.extracted_text = extract_text_from_pdf(profile.resume_file.path)
+                except Exception:
+                    # Fallback if file path isn't direct
+                    pass
+            
             profile.save()
             
-            # Run Gemini analysis if extracted text exists
+            # 2. Run Gemini analysis using the extracted text
             if profile.extracted_text:
-                # Provide a sample or active job description for evaluation context
                 sample_job_desc = "Looking for a Python Django developer with experience in scikit-learn, databases, and web deployment."
                 ai_feedback = analyze_resume_with_gemini(profile.extracted_text, sample_job_desc)
-            
+                
             return render(request, 'jobs/upload_resume.html', {'form': form, 'profile': profile, 'ai_feedback': ai_feedback})
     else:
         form = ResumeUploadForm(instance=profile)
-        
-    return render(request, 'jobs/upload_resume.html', {'form': form, 'profile': profile})
+        # If text already exists in database, load feedback too
+        if profile.extracted_text:
+            sample_job_desc = "Looking for a Python Django developer with experience in scikit-learn, databases, and web deployment."
+            ai_feedback = analyze_resume_with_gemini(profile.extracted_text, sample_job_desc)
+            
+    return render(request, 'jobs/upload_resume.html', {'form': form, 'profile': profile, 'ai_feedback': ai_feedback})
+
 @login_required
 def apply_to_job(request, pk):
     job = get_object_or_404(Job, pk=pk)
