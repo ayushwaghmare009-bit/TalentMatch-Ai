@@ -43,13 +43,13 @@ def upload_resume(request):
             profile = form.save(commit=False)
             profile.user = request.user
             if profile.resume_file:
-                # Extract text using your utility function
+                # Extract text using pdfplumber utility
                 profile.extracted_text = extract_text_from_pdf(profile.resume_file.path)
             profile.save()
             return redirect('upload_resume')
     else:
         form = ResumeUploadForm(instance=profile)
-        
+
     return render(request, 'jobs/upload_resume.html', {'form': form, 'profile': profile})
 @login_required
 def apply_to_job(request, pk):
