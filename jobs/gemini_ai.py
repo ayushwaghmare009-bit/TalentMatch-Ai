@@ -30,7 +30,7 @@ def analyze_resume_with_gemini(resume_text, job_description):
 
     try:
         response = client.models.generate_content(
-            model='gemini-3.8-flash',
+            model='gemini-2.5-flash',
             contents=prompt,
         )
         return response.text
