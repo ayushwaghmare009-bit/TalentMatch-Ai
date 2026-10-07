@@ -52,50 +52,58 @@ def job_create(request):
 
 @login_required
 def upload_resume(request):
-    profile, created = CandidateProfile.objects.get_or_create(user=request.user)
-    ai_feedback = None
-    
-    if request.method == 'POST':
-        form = ResumeUploadForm(request.POST, request.FILES, instance=profile)
-        if form.is_valid():
-            profile = form.save(commit=False)
-            profile.user = request.user
-            
-            if 'resume_file' in request.FILES:
-                profile.resume_file = request.FILES['resume_file']
-                profile.save() # Save first so the file gets written to storage
+    try:
+        profile, created = CandidateProfile.objects.get_or_create(user=request.user)
+        ai_feedback = None
+        
+        if request.method == 'POST':
+            form = ResumeUploadForm(request.POST, request.FILES, instance=profile)
+            if form.is_valid():
+                profile = form.save(commit=False)
+                profile.user = request.user
                 
-                try:
-                    file_path = profile.resume_file.path
-                    profile.extracted_text = extract_text_from_pdf(file_path)
-                except Exception as e:
-                    profile.extracted_text = f"Error reading PDF file: {str(e)}"
-                
-                profile.save()
+                if 'resume_file' in request.FILES:
+                    profile.resume_file = request.FILES['resume_file']
+                    profile.save()
+                    
+                    try:
+                        file_path = profile.resume_file.path
+                        profile.extracted_text = extract_text_from_pdf(file_path)
+                    except Exception as e:
+                        profile.extracted_text = f"Error reading PDF file: {str(e)}"
+                    
+                    profile.save()
 
-            # Run Gemini analysis if we have extracted text
-            if profile.extracted_text and not profile.extracted_text.startswith("Error"):
+                if profile.extracted_text and not profile.extracted_text.startswith("Error"):
+                    sample_job_desc = "Looking for a Python Django developer with experience in scikit-learn, databases, and web deployment."
+                    try:
+                        ai_feedback = analyze_resume_with_gemini(profile.extracted_text, sample_job_desc)
+                    except Exception as e:
+                        ai_feedback = f"AI Evaluation unavailable: {str(e)}"
+                    
+                return redirect('upload_resume')
+        else:
+            form = ResumeUploadForm(instance=profile)
+            if profile.extracted_text:
                 sample_job_desc = "Looking for a Python Django developer with experience in scikit-learn, databases, and web deployment."
                 try:
                     ai_feedback = analyze_resume_with_gemini(profile.extracted_text, sample_job_desc)
-                except Exception as e:
-                    ai_feedback = f"AI Evaluation unavailable: {str(e)}"
-                
-            return redirect('upload_resume')
-    else:
-        form = ResumeUploadForm(instance=profile)
-        if profile.extracted_text:
-            sample_job_desc = "Looking for a Python Django developer with experience in scikit-learn, databases, and web deployment."
-            try:
-                ai_feedback = analyze_resume_with_gemini(profile.extracted_text, sample_job_desc)
-            except Exception:
-                pass
+                except Exception:
+                    pass
 
-    return render(request, 'jobs/upload_resume.html', {
-        'form': form, 
-        'profile': profile, 
-        'ai_feedback': ai_feedback
-    })
+        return render(request, 'jobs/upload_resume.html', {
+            'form': form, 
+            'profile': profile, 
+            'ai_feedback': ai_feedback
+        })
+    except Exception as e:
+        # Fallback rendering to prevent 500 error page if anything else fails
+        return render(request, 'jobs/upload_resume.html', {
+            'form': ResumeUploadForm(),
+            'profile': None,
+            'ai_feedback': f"An error occurred loading your profile: {str(e)}"
+        })
+        
 @login_required
 def apply_to_job(request, pk):
     job = get_object_or_404(Job, pk=pk)
